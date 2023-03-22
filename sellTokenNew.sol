@@ -234,7 +234,7 @@ abstract contract Ownable is Context {
 contract miner is Ownable{
    address public admin;
    mapping (address=>uint) public startID;
-   uint256 public DAYSTIME=100;
+   uint256 public DAYSTIME=86400;
    mapping (address =>mapping (uint256=>user))public selladdress;
    mapping (address =>mapping (uint=>address)) public inMiner;
    mapping (address =>mapping (address=>uint)) public Value;
