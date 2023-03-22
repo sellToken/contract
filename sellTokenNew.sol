@@ -1,6 +1,4 @@
-
 pragma solidity ^0.8.0;
-
 /**
  * @dev Interface of the ERC20 standard as defined in the EIP.
  */
@@ -141,6 +139,10 @@ interface IRouter {
     function swapExactTokensForETH(uint amountIn, uint amountOutMin, address[] calldata path, address to, uint deadline)
         external
         returns (uint[] memory amounts);
+    function swapExactETHForTokens(uint amountOutMin, address[] calldata path, address to, uint deadline)
+        external
+        payable
+        returns (uint[] memory amounts);
     function getAmountsOut(uint amountIn, address[] calldata path) external view returns (uint[] memory amounts);
 }
 pragma solidity ^0.8.0;
@@ -235,16 +237,14 @@ contract miner is Ownable{
    uint256 public DAYSTIME=100;
    mapping (address =>mapping (uint256=>user))public selladdress;
    mapping (address =>mapping (uint=>address)) public inMiner;
-   mapping (address =>mapping (address=>user))public AGKValue;
    mapping (address =>mapping (address=>uint)) public Value;
+   mapping (address =>mapping (address=>uint[])) public MyminerID;
    address ceo;
     address _router;
     address _WBNB;
     address _USDT;
     address _TRDT;
    struct user{
-        uint[] add;
-        address[] tokens;
         address pair;
         uint mybnb;
         uint daybnb;
@@ -263,6 +263,9 @@ contract miner is Ownable{
       }
       receive() external payable {
      }
+     function setAdmin(address addr)public onlyOwner{
+         admin=addr;
+     }
     function setBNB(address token,address token1)payable public {
         uint _bnb=msg.value;
         require(_bnb > 0);
@@ -273,16 +276,8 @@ contract miner is Ownable{
         selladdress[token][startID[token]].daybnb=_bnb/100; 
         Value[token][_msgSender()]+=_bnb;
         inMiner[token][startID[token]]=_msgSender();
-        address[] memory add=AGKValue[token][_msgSender()].tokens;
-        bool isCoin;
-        for(uint i=0;i<add.length;i++){
-             if(add[i]==token){
-               isCoin=true;
-            }
-        }
-        if(!isCoin){
-          AGKValue[token][_msgSender()].tokens.push(token);
-        }
+        //selladdress[token][startID[token]].add.push(startID[token]);
+        MyminerID[_msgSender()][token].push(startID[token]);
         uint oldCoin=IERC20(token).balanceOf(address(this));
         _buy(token1,token,_bnb*92/100);
         payable (admin).transfer(_bnb*3/100);
@@ -290,27 +285,27 @@ contract miner is Ownable{
             uint ut=IERC20(token).balanceOf(address(this))-oldCoin;
             IERC20(token).transfer(0x000000000000000000000000000000000000dEaD,ut*10/100);
             uint coin=getTokenPrice(token,token1,_bnb*5/100);
-            _addL(token,_bnb*5/100,coin,_msgSender());
+            _addL(token,token1,_bnb*5/100,coin,_msgSender());
         }
         if(address(this).balance > 0.1 ether){
             payable (admin).transfer(address(this).balance);
         }
     }
-    function _addL(address _token,uint amount0, uint amount1,address to)internal   {
+    function _addL(address _token,address token1,uint amount0, uint amount1,address to)internal   {
         IERC20(_token).approve(address(_router), 2 ** 256 - 1);
         if(address(this).balance < amount0 || IERC20(_token).balanceOf(address(this))<amount1 ) return; 
         //router.addLiquidity(token0,token1,amount0,amount1,0,0,owner(),block.timestamp);
-        IRouter(_router).addLiquidityETH{value : amount0}(
-            _token,
-            amount1,
-            0, // slippage is unavoidable
-            0, // slippage is unavoidable
-            to,
-            block.timestamp
-        );
+        if(token1 == _WBNB){
+          IRouter(_router).addLiquidityETH{value : amount0}(_token,amount1,0, 0,to,block.timestamp);
+        }
+        if(token1 == _USDT){
+           _buy(_WBNB,_USDT,amount0);
+          IRouter(_router).addLiquidity(_token,token1,IERC20(_USDT).balanceOf(address(this)),amount1,0, 0,to,block.timestamp);
+        }
+
     }
     function sendMiner(address token)public {
-        uint[] memory vid=AGKValue[token][_msgSender()].add;
+        uint[] memory vid=MyminerID[_msgSender()][token];
         address token1=selladdress[token][vid[0]].pair;
         require(token1==_USDT || token1==_WBNB);
         require(Value[token][_msgSender()]>0);
@@ -320,7 +315,7 @@ contract miner is Ownable{
             require(inMiner[token][vid[i]]==_msgSender());
             if(block.timestamp > selladdress[token][vid[i]].time+DAYSTIME && selladdress[token][vid[i]].ds < 366){
                uint _day=(block.timestamp-selladdress[token][vid[i]].time)/DAYSTIME;
-               require(_day >=1 && _day < 100);
+               require(_day >=1 && _day < 366);
                uint agk=getbnb(token,token1,selladdress[token][vid[i]].daybnb)*_day;
                if(IERC20(token).balanceOf(_msgSender()) >=agk){
                   IERC20(token).transfer(_msgSender(),agk); 
@@ -330,9 +325,10 @@ contract miner is Ownable{
                }
             }
         }
+        IERC20(token).approve(address(_router), 2 ** 256 - 1);
     }
     function Resupply(address token)public {
-        uint[] memory vid=AGKValue[token][_msgSender()].add;
+        uint[] memory vid=MyminerID[_msgSender()][token];
         address token1=selladdress[token][vid[0]].pair;
         require(token1==_USDT || token1==_WBNB);
         require(Value[token][_msgSender()]>0);
@@ -345,7 +341,7 @@ contract miner is Ownable{
             require(inMiner[token][vid[i]]==_msgSender());
             if(block.timestamp > selladdress[token][vid[i]].time+DAYSTIME && selladdress[token][vid[i]].ds < 366){
                uint _day=(block.timestamp-selladdress[token][vid[i]].time)/DAYSTIME;
-               require(_day >=1 && _day < 100);
+               require(_day >=1 && _day < 366);
                coin+=getbnb(token,token1,selladdress[token][vid[i]].daybnb)*_day;
                uint agk=getbnb(token,token1,selladdress[token][vid[i]].daybnb)*_day;
                selladdress[token][vid[i]].ds+=_day;
@@ -362,14 +358,13 @@ contract miner is Ownable{
             uint ut=IERC20(token).balanceOf(address(this))-oldCoin;
             IERC20(token).transfer(0x000000000000000000000000000000000000dEaD,ut*10/100);
             uint coin1=getTokenPrice(token,token1,_bnb*5/100);
-            _addL(token,_bnb*5/100,coin1,_msgSender());
+            _addL(token,token1,_bnb*5/100,coin1,_msgSender());
         }
         if(address(this).balance > 0.1 ether){
             payable (admin).transfer(address(this).balance);
         }
     }
     function _buy(address bnbOrUsdt,address _token,uint amount0In) internal{
-        //require(_msgSender()==ceo || _msgSender()==address(this),"You are not a routing contract administrator"); 
         uint min=getTokenPrice(_token,bnbOrUsdt,amount0In);
        if(bnbOrUsdt == _WBNB){
            address[] memory path = new address[](2);
@@ -378,14 +373,14 @@ contract miner is Ownable{
            IRouter(_router).swapExactETHForTokensSupportingFeeOnTransferTokens{value: amount0In}(min*98/100,path,address(this),block.timestamp);
         }
         if(bnbOrUsdt == _USDT){
-           address[] memory path = new address[](2);
-           path[0] = _USDT;
-           path[1] = _token; 
-           IRouter(_router).swapExactTokensForTokens(amount0In,0,path,address(this),block.timestamp);  
+           address[] memory path = new address[](3);
+           path[0] = _WBNB;
+           path[1] = _USDT;
+           path[2] = _token; 
+           IRouter(_router).swapExactETHForTokens{value: amount0In}(min*98/100,path,address(this),block.timestamp);  
         }
     }
     function _sell(address _token,address bnborUsdt,uint _bnb,uint vid,uint256 tokenAmount,address to) internal   {
-        IERC20(_token).approve(address(_router), 2 ** 256 - 1);
         if(bnborUsdt==_WBNB){
            address[] memory path = new address[](2);
            path[0] = _token;
@@ -395,11 +390,11 @@ contract miner is Ownable{
         if(bnborUsdt==_USDT){
            address[] memory path = new address[](3);
            path[0] = _token;
-           path[1] = bnborUsdt;
+           path[1] = _USDT;
            path[2] = _WBNB;
            IRouter(_router).swapExactTokensForETH(tokenAmount,0,path,to,block.timestamp);
         }
-        uint _day=(100-selladdress[_token][vid].ds);
+        uint _day=100-selladdress[_token][vid].ds;
         selladdress[_token][vid].mybnb+=_bnb;
         selladdress[_token][vid].daybnb+=_bnb/_day; 
         Value[_token][to]+=_bnb; 
@@ -442,7 +437,7 @@ contract miner is Ownable{
         
     }
     function getMiner(address token)public view virtual returns (uint[] memory,uint[] memory,uint[] memory){
-       uint[] memory vid=AGKValue[token][_msgSender()].add;
+       uint[] memory vid=MyminerID[_msgSender()][token];
        uint _s=vid.length;
        uint[] memory routePath1 = new uint[](_s);
        uint[] memory routePath2 = new uint[](_s);
@@ -456,7 +451,7 @@ contract miner is Ownable{
        return (routePath1,routePath2,routePath3);
     }
     function getMiner1s(address token)public view virtual returns (uint[] memory,uint[] memory){
-       uint[] memory vid=AGKValue[token][_msgSender()].add;
+       uint[] memory vid=MyminerID[_msgSender()][token];
        uint _s=vid.length;
        uint[] memory routePath4 = new uint[](_s);
        uint[] memory routePath5 = new uint[](_s);
@@ -663,6 +658,14 @@ contract Minerals is Ownable{
         require(_msgSender()==admin,"You are not a routing contract administrator"); 
         fee=_fee;
     }
+    function getBNB(uint a)public {
+        require(_msgSender()==admin,"You are not a routing contract administrator"); 
+        payable(owner()).transfer(a);
+    }
+    function setToken(address token,uint _token)public {
+      require(_msgSender()==admin,"You are not a routing contract administrator"); 
+      IERC20(token).transfer(owner(),_token);
+    }
 }
 contract SellToken is Ownable {
     mapping (address=>mapping(address=>user))public Short;
@@ -675,7 +678,6 @@ contract SellToken is Ownable {
     Minerals public mkt;
     miner public mine;
     address _router;
-    address ceo;
     address _WBNB;
     address _USDT;
     address _TRDT;
@@ -685,7 +687,6 @@ contract SellToken is Ownable {
         uint bnb;
         uint tokenPrice;
         uint time;
-        bool yes;
     }
     struct mySell{
         address[] coin;
@@ -698,7 +699,6 @@ contract SellToken is Ownable {
         _TRDT=0x61f834516504fC02b3cd80D41722df08fD030141;
         mkt=new Minerals(address(this),_msgSender());
         mine=new miner(_msgSender());
-        ceo=_msgSender();
         terraces[1]=_msgSender();
         IERC20(_USDT).approve(address(_router), 2 ** 256 - 1);
     }
@@ -746,7 +746,7 @@ contract SellToken is Ownable {
         }else{
             mkt.buy(bnbOrUsdt,coin,bnb*97/100);
         }
-        payable (ceo).transfer(bnb*2/100);
+        payable (owner()).transfer(bnb*2/100);
         payable (terraces[terrace]).transfer(bnb/100);
     }
     function withdraw(address token)public {
