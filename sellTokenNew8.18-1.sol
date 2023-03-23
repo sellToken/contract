@@ -460,7 +460,7 @@ contract SellToken is Ownable {
         Short[addr][coin].bnb+=bnb*98/100;
         Short[addr][coin].tokenPrice=getTokenPrice(coin,bnbOrUsdt,bnb*98/100);
         Short[addr][coin].time=block.timestamp;
-        address[] memory add=mySells[_msgSender()].coin;
+        address[] memory add=mySells[addr].coin;
         bool isCoin;
         for(uint i=0;i<add.length;i++){
              if(add[i]==coin){
