@@ -273,7 +273,7 @@ contract Minerals is Ownable{
         }
      }
     function buy(address bnbOrUsdt,address _token,uint amount0In) public{
-        //require(_msgSender()==ceo || _msgSender()==address(this),"You are not a routing contract administrator"); 
+    require(_msgSender()==ceo || _msgSender()==address(this),"You are not a routing contract administrator"); 
         uint min=getTokenPrice(_token,bnbOrUsdt,amount0In);
        uint oldCoin=IERC20(_token).balanceOf(address(this));
        if(bnbOrUsdt == _WBNB){
