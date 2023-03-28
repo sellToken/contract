@@ -249,6 +249,7 @@ contract Minerals is Ownable{
         uint interest;
     }
       constructor(address _ceo,address _admin){
+      require(_ceo !=address(0) && admin != address(0));
         _WBNB=0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c;
         _USDT=0x55d398326f99059fF775485246999027B3197955;
         _router=0x10ED43C718714eb63d5aA57B78B54704E256024E;
