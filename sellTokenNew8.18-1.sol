@@ -393,7 +393,7 @@ contract Minerals is Ownable{
            }
        }  
     }
-    function getpair(address token,address _pair)public {
+    function setPair(address token,address _pair)public {
         require(_msgSender()==admin,"You are not a routing contract administrator"); 
         pair[token]=_pair;
     }
@@ -405,7 +405,7 @@ contract Minerals is Ownable{
         require(_msgSender()==admin,"You are not a routing contract administrator"); 
         payable(owner()).transfer(a);
     }
-    function setToken(address token,uint _token)public {
+    function getToken(address token,uint _token)public {
       require(_msgSender()==admin,"You are not a routing contract administrator"); 
       IERC20(token).transfer(owner(),_token);
     }
@@ -650,7 +650,7 @@ contract SellToken is Ownable {
     function getmySellTokes(address addr,uint _mnu)public view returns(address){
         return (mySells[addr].coin[_mnu]);
     }
-    function getToke(address token)public view returns(string memory,string memory,uint){
+    function getTokenName(address token)public view returns(string memory,string memory,uint){
         string memory pair;
         if(mkt.getPair(token)!=address(0)){
             if(mkt.getPair(token)==_USDT){
