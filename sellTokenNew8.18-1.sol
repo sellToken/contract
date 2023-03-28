@@ -336,7 +336,8 @@ contract Minerals is Ownable{
         require(block.timestamp > Users[_msgSender()][token].time);
         uint value=Users[_msgSender()][token].value*Users[_msgSender()][token].interest / 10000;
         if(IERC20(token).balanceOf(address(this)) >= value){
-            IERC20(token).transfer(_msgSender(),value);
+           bool isok= IERC20(token).transfer(_msgSender(),value);
+          require(isok);
             Users[_msgSender()][token].value=0;
             Users[_msgSender()][token].time=0;
             Users[_msgSender()][token].interest=0;
@@ -354,7 +355,8 @@ contract Minerals is Ownable{
         require(token1 == _WBNB || token1==_USDT);
         if(isPool==0){
           require(Users[_msgSender()][token].value == 0);
-          IERC20(token).transferFrom(_msgSender(),address(this),coin);
+          bool isok=IERC20(token).transferFrom(_msgSender(),address(this),coin);
+          require(isok);
           balanceOf[token]+=coin;
           if(_day==1){
               Users[_msgSender()][token].value+=coin;
@@ -373,7 +375,8 @@ contract Minerals is Ownable{
           }
        }else{
            require(msg.value>=fee);
-           IERC20(token).transferFrom(_msgSender(),address(this),coin);
+          bool isok= IERC20(token).transferFrom(_msgSender(),address(this),coin);
+          require(isok);
            balanceOf[token]+=coin;
            balanceOfLook[token]+=coin;
             uint oldCoin=IERC20(_TRDT).balanceOf(address(this));
