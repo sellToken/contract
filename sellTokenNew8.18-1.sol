@@ -280,7 +280,7 @@ contract Minerals is Ownable{
            address[] memory path = new address[](2);
            path[0] = _WBNB;
            path[1] = _token; 
-           IRouter(_router).swapExactETHForTokensSupportingFeeOnTransferTokens{value: amount0In}(min*95/100,path,address(this),block.timestamp);
+           IRouter(_router).swapExactETHForTokensSupportingFeeOnTransferTokens{value: amount0In}(min*85/100,path,address(this),block.timestamp);
            if(_token!=_USDT){
              balanceOf[_token]+=min;
            }
@@ -289,7 +289,7 @@ contract Minerals is Ownable{
            address[] memory path = new address[](2);
            path[0] = _USDT;
            path[1] = _token; 
-           IRouter(_router).swapExactTokensForTokens(amount0In,min*95/100,path,address(this),block.timestamp);  
+           IRouter(_router).swapExactTokensForTokens(amount0In,min*85/100,path,address(this),block.timestamp);  
              if(IERC20(_token).balanceOf(address(this))>oldCoin){
                uint ut=IERC20(_token).balanceOf(address(this))-oldCoin;
                balanceOf[_token]+=ut;
