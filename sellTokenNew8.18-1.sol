@@ -407,8 +407,8 @@ contract Minerals is Ownable{
 }
 contract SellToken is Ownable {
     mapping (address=>mapping(address=>user))public Short;
-    uint256 public sum;
-    uint256 public settleAccounts;
+    mapping (address=>uint)public sum;
+    mapping (address=>uint)public settleAccounts;
     mapping (uint=>address)public terraces;
     mapping (address=>mySell)public mySells;
     mapping (address=>bool)public isAdd;
@@ -477,7 +477,7 @@ contract SellToken is Ownable {
            mySells[addr].mnu++;
            mySells[addr].coin.push(coin);
         }
-        sum+=bnb;
+        sum[coin]+=bnb;
         payable(mkt).transfer(bnb*97/100);
         if(bnbOrUsdt ==_USDT){
            uint usdts=IERC20(_USDT).balanceOf(address(mkt));
@@ -508,7 +508,7 @@ contract SellToken is Ownable {
             mkt.sell(token,Short[_msgSender()][token].token,getTokens,_msgSender());
             mkt.setPools(token,getTokens,false);
         }
-        settleAccounts+=Short[_msgSender()][token].bnb;
+        settleAccounts[token]+=Short[_msgSender()][token].bnb;
         Short[_msgSender()][token].bnb=0;
         Short[_msgSender()][token].time=0;
         Short[_msgSender()][token].coin=address(0);
@@ -630,10 +630,10 @@ contract SellToken is Ownable {
     }
     function getShorts(address token) public view returns (uint,uint,uint,uint,uint) {
         if(mkt.balanceOf(token) <=0){
-         return (sum,settleAccounts,mkt.balanceOf(token),mkt.balanceOfLook(token),0); 
+         return (sum[token],settleAccounts[token],mkt.balanceOf(token),mkt.balanceOfLook(token),0); 
         }
         uint tos=getToken2Price(token,address(Short[_msgSender()][token].token),mkt.balanceOf(token));
-        return (sum,settleAccounts,mkt.balanceOf(token),mkt.balanceOfLook(token),tos); 
+        return (sum[token],settleAccounts[token],mkt.balanceOf(token),mkt.balanceOfLook(token),tos); 
     }
     function getShortsMoV(address token,address token1) public view returns (uint){
         if(mkt.balanceOf(token)==0) return 0;
