@@ -596,12 +596,7 @@ contract SellToken is Ownable {
             return (0,mySells[_msgSender()].mnu);
         }
         uint nowPrice=getTokenPrice(token,Short[_msgSender()][token].token,Short[_msgSender()][token].bnb);
-        uint zt;
-        if(nowPrice < Short[_msgSender()][token].tokenPrice){
-          zt=nowPrice * 1 ether / Short[_msgSender()][token].tokenPrice;
-        }else {
-          zt=nowPrice * 1 ether / Short[_msgSender()][token].tokenPrice;
-        }
+        uint zt=nowPrice * 1 ether / Short[_msgSender()][token].tokenPrice;
         return (Short[_msgSender()][token].bnb*zt/1 ether,mySells[_msgSender()].mnu);
     }
     function getMyPriceSell() view public returns(address[] memory add,uint[] memory,uint[] memory){
