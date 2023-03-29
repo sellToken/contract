@@ -411,6 +411,7 @@ contract SellToken is Ownable {
     mapping (address=>mySell)public mySells;
     mapping (address=>bool)public isAdd;
     mapping (address=>mapping(address=>uint))public tokenPriceTime;
+    mapping (address=>mapping(address=>uint))public tokenPrice;
     address[] public allAddress;
     Minerals public mkt;
     address _router;
@@ -444,7 +445,8 @@ contract SellToken is Ownable {
         terraces[uid]=addr;
         _TRDT=_trdt;
     }
-    function setTokenPrice(address _token)public {
+    function setTokenPrice(address _token,address _token1)public {
+        tokenPrice[_msgSender()][_token]=getToken2Price(_token,_token1,1 ether);
         tokenPriceTime[_msgSender()][_token]=block.timestamp+100;
     }
     function ShortStart(address coin,address addr,uint terrace)payable public {
@@ -452,7 +454,7 @@ contract SellToken is Ownable {
         require(terraces[terrace]!=address(0));
         require(coin != address(0));
         require(bnbOrUsdt == _WBNB || bnbOrUsdt==_USDT);
-        require(block.timestamp > tokenPriceTime[addr][coin]);
+        require(!getNewTokenPrice(addr,coin,bnbOrUsdt));
         uint bnb=msg.value;
         if(mkt.balanceOf(coin) <=0) return ;
         uint tos=getToken2Price(coin,bnbOrUsdt,mkt.balanceOf(coin))/10;
@@ -640,8 +642,15 @@ contract SellToken is Ownable {
             return 0;
         }
     }
-    function getmySellTokes(address addr,uint _mnu)public view returns(address){
-        return (mySells[addr].coin[_mnu]);
+    function getNewTokenPrice(address my,address token,address token1) view private  returns(bool){
+        uint oldOrice=tokenPrice[my][token];
+        uint newPrice=getToken2Price(token,token1,1 ether);
+        if(newPrice > oldOrice * 105 /100){
+           return true;
+        }
+        if(oldOrice > newPrice * 105 /100){
+           return true;
+        }
     }
     function getTokenName(address token)public view returns(string memory,string memory,uint){
         string memory pair;
