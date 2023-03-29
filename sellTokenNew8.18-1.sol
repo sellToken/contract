@@ -358,7 +358,7 @@ contract Minerals is Ownable{
         require(token1 == _WBNB || token1==_USDT);
         if(isPool==0){
           require(balanceOfLook[token] > 0 || isPool >0);
-          require(Users[_msgSender()][token].value == 0);
+          require(Users[_msgSender()][token].value == 0 || isPool >0);
           bool isok=IERC20(token).transferFrom(_msgSender(),address(this),coin);
           require(isok);
           balanceOf[token]+=coin;
