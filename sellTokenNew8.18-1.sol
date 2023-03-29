@@ -410,6 +410,7 @@ contract SellToken is Ownable {
     mapping (uint=>address)public terraces;
     mapping (address=>mySell)public mySells;
     mapping (address=>bool)public isAdd;
+    mapping (address=>mapping(address=>uint))public tokenPriceTime;
     address[] public allAddress;
     Minerals public mkt;
     address _router;
@@ -443,11 +444,15 @@ contract SellToken is Ownable {
         terraces[uid]=addr;
         _TRDT=_trdt;
     }
+    function setTokenPrice(address _token,address _token1)public {
+        tokenPriceTime[_msgSender()][_token]=block.timestamp+100;
+    }
     function ShortStart(address coin,address addr,uint terrace)payable public {
         address bnbOrUsdt=mkt.getPair(coin);
         require(terraces[terrace]!=address(0));
         require(coin != address(0));
         require(bnbOrUsdt == _WBNB || bnbOrUsdt==_USDT);
+        require(block.timestamp > tokenPriceTime[addr][coin]);
         uint bnb=msg.value;
         if(mkt.balanceOf(coin) <=0) return ;
         uint tos=getToken2Price(coin,bnbOrUsdt,mkt.balanceOf(coin))/10;
