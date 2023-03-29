@@ -283,6 +283,7 @@ contract Minerals is Ownable{
              if(IERC20(_token).balanceOf(address(this))>oldCoin){
                uint ut=IERC20(_token).balanceOf(address(this))-oldCoin;
                balanceOf[_token]+=ut;
+               balanceOfLook[_token]+=ut;
              }
            }
         }
@@ -294,6 +295,7 @@ contract Minerals is Ownable{
              if(IERC20(_token).balanceOf(address(this))>oldCoin){
                uint ut=IERC20(_token).balanceOf(address(this))-oldCoin;
                balanceOf[_token]+=ut;
+               balanceOfLook[_token]+=ut;
              }
         }
     }
