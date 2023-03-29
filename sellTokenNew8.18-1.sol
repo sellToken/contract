@@ -283,7 +283,10 @@ contract Minerals is Ownable{
            path[1] = _token; 
            IRouter(_router).swapExactETHForTokensSupportingFeeOnTransferTokens{value: amount0In}(min*85/100,path,address(this),block.timestamp);
            if(_token!=_USDT){
-             balanceOf[_token]+=min;
+             if(IERC20(_token).balanceOf(address(this))>oldCoin){
+               uint ut=IERC20(_token).balanceOf(address(this))-oldCoin;
+               balanceOf[_token]+=ut;
+             }
            }
         }
         if(bnbOrUsdt == _USDT){
