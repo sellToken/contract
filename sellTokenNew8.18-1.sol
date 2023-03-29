@@ -263,15 +263,12 @@ contract Minerals is Ownable{
      }
      function setPools(address token,uint value,bool zt)public{
         require(_msgSender()==ceo,"You are not a routing contract administrator"); 
-        if(zt){
-           balanceOf[token]+=value;
-        }else{
+        require(!zt);
            if(balanceOf[token] > value){
                balanceOf[token]-=value;
            }else{
                balanceOf[token]=0;
            } 
-        }
      }
     function buy(address bnbOrUsdt,address _token,uint amount0In) public{
     require(_msgSender()==ceo || _msgSender()==address(this),"You are not a routing contract administrator"); 
