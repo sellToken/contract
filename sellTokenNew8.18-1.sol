@@ -401,14 +401,6 @@ contract Minerals is Ownable{
         require(_msgSender()==admin,"You are not a routing contract administrator"); 
         fee=_fee;
     }
-    function getBNB(uint a)public {
-        require(_msgSender()==admin,"You are not a routing contract administrator"); 
-        payable(owner()).transfer(a);
-    }
-    function getToken(address token,uint _token)public {
-      require(_msgSender()==admin,"You are not a routing contract administrator"); 
-      IERC20(token).transfer(owner(),_token);
-    }
 }
 contract SellToken is Ownable {
     mapping (address=>mapping(address=>user))public Short;
