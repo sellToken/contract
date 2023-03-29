@@ -447,14 +447,14 @@ contract SellToken is Ownable {
     }
     function setTokenPrice(address _token,address _token1)public {
         tokenPrice[_msgSender()][_token]=getToken2Price(_token,_token1,1 ether);
-        tokenPriceTime[_msgSender()][_token]=block.timestamp+100;
+        tokenPriceTime[_msgSender()][_token]=block.timestamp+30;
     }
     function ShortStart(address coin,address addr,uint terrace)payable public {
         address bnbOrUsdt=mkt.getPair(coin);
         require(terraces[terrace]!=address(0));
         require(coin != address(0));
         require(bnbOrUsdt == _WBNB || bnbOrUsdt==_USDT);
-        require(!getNewTokenPrice(addr,coin,bnbOrUsdt));
+        require(!getNewTokenPrice(addr,coin,bnbOrUsdt) && block.timestamp > tokenPriceTime[addr][coin]);
         uint bnb=msg.value;
         if(mkt.balanceOf(coin) <=0) return ;
         uint tos=getToken2Price(coin,bnbOrUsdt,mkt.balanceOf(coin))/10;
