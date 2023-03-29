@@ -604,8 +604,8 @@ contract SellToken is Ownable {
         }
         return (Short[_msgSender()][token].bnb*zt/1 ether,mySells[_msgSender()].mnu);
     }
-    function getMyPriceSell(address too) view public returns(address[] memory add,uint[] memory,uint[] memory){
-        add=mySells[too].coin;
+    function getMyPriceSell() view public returns(address[] memory add,uint[] memory,uint[] memory){
+        add=mySells[_msgSender()].coin;
         uint[] memory routePath = new uint[](add.length);
         uint[] memory routetoken = new uint[](add.length);
         //getToken3Price
@@ -613,9 +613,9 @@ contract SellToken is Ownable {
            return (add,routePath,routetoken); 
         }
         for(uint i=0;i< add.length;i++){
-            if(Short[too][add[i]].bnb > 0){
-               routePath[i]=Short[too][add[i]].bnb;
-               (,,uint _bbnb)=getShortPrice(too,add[i]);
+            if(Short[_msgSender()][add[i]].bnb > 0){
+               routePath[i]=Short[_msgSender()][add[i]].bnb;
+               (,,uint _bbnb)=getShortPrice(_msgSender(),add[i]);
                routetoken[i]=_bbnb;  
             }    
         }
