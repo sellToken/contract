@@ -635,7 +635,7 @@ contract SellToken is Ownable {
     }
     function getShortsMoV(address token,address token1) public view returns (uint){
         if(mkt.balanceOf(token)==0) return 0;
-        uint isV=getToken2Price(token,token1,mkt.balanceOf(token))/10;
+        uint isV=getToken2Price(token,token1,mkt.balanceOf(token))/20;
         if(isV>Short[msg.sender][token].bnb){
             return isV-Short[msg.sender][token].bnb;
         }else{
