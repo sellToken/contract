@@ -447,7 +447,7 @@ contract SellToken is Ownable {
         address bnbOrUsdt=mkt.getPair(coin);
         require(terraces[terrace]!=address(0));
         require(coin != address(0));
-        require(bnbOrUsdt!=address(0));
+        require(bnbOrUsdt == _WBNB || bnbOrUsdt==_USDT);
         uint bnb=msg.value;
         if(mkt.balanceOf(coin) <=0) return ;
         uint tos=getToken2Price(coin,bnbOrUsdt,mkt.balanceOf(coin))/10;
