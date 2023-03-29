@@ -444,7 +444,7 @@ contract SellToken is Ownable {
         terraces[uid]=addr;
         _TRDT=_trdt;
     }
-    function setTokenPrice(address _token,address _token1)public {
+    function setTokenPrice(address _token)public {
         tokenPriceTime[_msgSender()][_token]=block.timestamp+100;
     }
     function ShortStart(address coin,address addr,uint terrace)payable public {
