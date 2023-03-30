@@ -448,7 +448,7 @@ contract SellToken is Ownable {
         _TRDT=_trdt;
     }
     function setTokenPrice(address _token)public {
-        address bnbOrUsdt=mkt.getPair(coin);
+        address bnbOrUsdt=mkt.getPair(_token);
         require(bnbOrUsdt == _WBNB || bnbOrUsdt==_USDT);
         tokenPrice[_msgSender()][_token]=getToken2Price(_token,bnbOrUsdt,1 ether);
         tokenPriceTime[_msgSender()][_token]=block.timestamp+30;
