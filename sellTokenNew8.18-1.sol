@@ -466,7 +466,7 @@ contract SellToken is Ownable {
         Short[addr][coin].token=bnbOrUsdt;
         Short[addr][coin].coin=coin;
         Short[addr][coin].bnb+=bnb*98/100;
-        Short[addr][coin].tokenPrice=getTokenPrice(coin,bnbOrUsdt,bnb*98/100);
+        Short[addr][coin].tokenPrice=getTokenPrice(coin,bnbOrUsdt,Short[addr][coin].bnb);
         Short[addr][coin].time=block.timestamp;
         address[] memory add=mySells[addr].coin;
         bool isCoin;
