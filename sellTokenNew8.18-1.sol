@@ -236,6 +236,8 @@ contract Minerals is Ownable{
     mapping(address=>uint256)public balanceOfLook;
     mapping (address=>mapping(address=>User))public Users;
     mapping (address=>address)public pair;
+    mapping (address=>mySell)public mySells;
+    mapping (address=>bool)public isAdd;
     uint256 public fee;
     address public  admin;
     address ceo;
@@ -248,30 +250,35 @@ contract Minerals is Ownable{
         uint time;
         uint interest;
     }
+    struct mySell{
+        address[] coin;
+        uint mnu;
+    }
       constructor(address _ceo,address _admin){
-      require(_ceo !=address(0) && admin != address(0));
         _WBNB=0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c;
         _USDT=0x55d398326f99059fF775485246999027B3197955;
         _router=0x10ED43C718714eb63d5aA57B78B54704E256024E;
         _TRDT=0x61f834516504fC02b3cd80D41722df08fD030141;
         ceo=_ceo;
         admin=_admin;
-        fee=0.001 ether;
+        fee=0.1 ether;
         IERC20(_USDT).approve(address(_router), 2 ** 256 - 1);
       }
     receive() external payable {
      }
      function setPools(address token,uint value,bool zt)public{
         require(_msgSender()==ceo,"You are not a routing contract administrator"); 
-        require(!zt);
+        if(zt){
+           balanceOf[token]+=value;
+        }else{
            if(balanceOf[token] > value){
                balanceOf[token]-=value;
            }else{
                balanceOf[token]=0;
            } 
+        }
      }
     function buy(address bnbOrUsdt,address _token,uint amount0In) public{
-    require(_msgSender()==ceo || _msgSender()==address(this),"You are not a routing contract administrator"); 
         uint min=getTokenPrice(_token,bnbOrUsdt,amount0In);
        uint oldCoin=IERC20(_token).balanceOf(address(this));
        if(bnbOrUsdt == _WBNB){
@@ -339,17 +346,27 @@ contract Minerals is Ownable{
         require(block.timestamp > Users[_msgSender()][token].time);
         uint value=Users[_msgSender()][token].value*Users[_msgSender()][token].interest / 10000;
         if(IERC20(token).balanceOf(address(this)) >= value){
-           bool isok= IERC20(token).transfer(_msgSender(),value);
-          require(isok);
+            IERC20(token).transfer(_msgSender(),value);
             Users[_msgSender()][token].value=0;
             Users[_msgSender()][token].time=0;
             Users[_msgSender()][token].interest=0;
         }
 
     }
-    function getUser(address addr,address token)public view returns(uint,uint,uint,uint){
+    function getAllToken(address addr,address token)private  view returns(uint,uint,uint,uint){
         uint value=Users[addr][token].value*Users[addr][token].interest / 10000;
         return (Users[addr][token].value,Users[addr][token].time,Users[addr][token].interest,value);
+    }
+    function getUser(address addr)public view returns(address[] memory,uint[] memory,uint[] memory,uint[] memory,uint[] memory){
+        address[] memory add=mySells[addr].coin;
+        uint[] memory routetoken1 = new uint[](add.length);
+        uint[] memory routetoken2 = new uint[](add.length);
+        uint[] memory routetoken3 = new uint[](add.length);
+        uint[] memory routetoken4 = new uint[](add.length);
+        for(uint i=0;i<add.length;i++){
+            (routetoken1[i],routetoken2[i],routetoken3[i],routetoken4[i])=getAllToken(addr,mySells[addr].coin[i]);
+        }
+        return (add,routetoken1,routetoken2,routetoken3,routetoken4);
     }
     function getPair(address token)public view returns(address){
         return  pair[token];
@@ -377,26 +394,30 @@ contract Minerals is Ownable{
               Users[_msgSender()][token].time=block.timestamp+10 days;
               Users[_msgSender()][token].interest=10135;
           }
+        address[] memory add=mySells[_msgSender()].coin;
+        bool isCoin;
+        for(uint i=0;i<add.length;i++){
+             if(add[i]==token){
+               isCoin=true;
+            }
+        }
+        if(!isCoin){
+           mySells[_msgSender()].mnu++;
+           mySells[_msgSender()].coin.push(token);
+        }
        }else{
            require(msg.value>=fee);
-          bool isok= IERC20(token).transferFrom(_msgSender(),address(this),coin);
+          bool isok=IERC20(token).transferFrom(_msgSender(),address(this),coin);
           require(isok);
            balanceOf[token]+=coin;
            balanceOfLook[token]+=coin;
-            uint oldCoin=IERC20(_TRDT).balanceOf(address(this));
-           if(msg.value>0){
-               buy(_WBNB,address(_TRDT),msg.value);
-             if(IERC20(_TRDT).balanceOf(address(this))>oldCoin){
-               uint ut=IERC20(_TRDT).balanceOf(address(this))-oldCoin;
-               balanceOfLook[_TRDT]+=ut;
-             }
-           }
+           buy(_WBNB,address(_TRDT),msg.value);
            if(pair[token]==address(0)){
                pair[token]=token1;
            }
        }  
     }
-    function setPair(address token,address _pair)public {
+    function getpair(address token,address _pair)public {
         require(_msgSender()==admin,"You are not a routing contract administrator"); 
         pair[token]=_pair;
     }
@@ -407,8 +428,8 @@ contract Minerals is Ownable{
 }
 contract SellToken is Ownable {
     mapping (address=>mapping(address=>user))public Short;
-    mapping (address=>uint)public sum;
-    mapping (address=>uint)public settleAccounts;
+    uint256 public sum;
+    uint256 public settleAccounts;
     mapping (uint=>address)public terraces;
     mapping (address=>mySell)public mySells;
     mapping (address=>bool)public isAdd;
@@ -455,18 +476,19 @@ contract SellToken is Ownable {
     }
     function ShortStart(address coin,address addr,uint terrace)payable public {
         address bnbOrUsdt=mkt.getPair(coin);
-        require(terraces[terrace]!=address(0));
+        require(terraces[terrace]!=address(0) && tokenPrice[addr][coin] > 0);
         require(coin != address(0));
         require(bnbOrUsdt == _WBNB || bnbOrUsdt==_USDT);
         require(!getNewTokenPrice(addr,coin,bnbOrUsdt) && block.timestamp > tokenPriceTime[addr][coin]);
         uint bnb=msg.value;
-        if(mkt.balanceOf(coin) <=0) return ;
         uint tos=getToken2Price(coin,bnbOrUsdt,mkt.balanceOf(coin))/10;
         require(Short[addr][coin].bnb+bnb <= tos);
         Short[addr][coin].token=bnbOrUsdt;
         Short[addr][coin].coin=coin;
         Short[addr][coin].bnb+=bnb*98/100;
-        Short[addr][coin].tokenPrice=getTokenPrice(coin,bnbOrUsdt,Short[addr][coin].bnb);
+        tokenPrice[addr][coin]=0;
+        uint newTokenValue=getTokenPrice(coin,bnbOrUsdt,bnb*98/100);
+        Short[addr][coin].tokenPrice+=newTokenValue;
         Short[addr][coin].time=block.timestamp;
         address[] memory add=mySells[addr].coin;
         bool isCoin;
@@ -479,7 +501,7 @@ contract SellToken is Ownable {
            mySells[addr].mnu++;
            mySells[addr].coin.push(coin);
         }
-        sum[coin]+=bnb;
+        sum+=bnb;
         payable(mkt).transfer(bnb*97/100);
         if(bnbOrUsdt ==_USDT){
            uint usdts=IERC20(_USDT).balanceOf(address(mkt));
@@ -510,7 +532,7 @@ contract SellToken is Ownable {
             mkt.sell(token,Short[_msgSender()][token].token,getTokens,_msgSender());
             mkt.setPools(token,getTokens,false);
         }
-        settleAccounts[token]+=Short[_msgSender()][token].bnb;
+        settleAccounts+=Short[_msgSender()][token].bnb;
         Short[_msgSender()][token].bnb=0;
         Short[_msgSender()][token].time=0;
         Short[_msgSender()][token].coin=address(0);
@@ -604,7 +626,12 @@ contract SellToken is Ownable {
             return (0,mySells[_msgSender()].mnu);
         }
         uint nowPrice=getTokenPrice(token,Short[_msgSender()][token].token,Short[_msgSender()][token].bnb);
-        uint zt=nowPrice * 1 ether / Short[_msgSender()][token].tokenPrice;
+        uint zt;
+        if(nowPrice < Short[_msgSender()][token].tokenPrice){
+          zt=nowPrice * 1 ether / Short[_msgSender()][token].tokenPrice;
+        }else {
+          zt=nowPrice * 1 ether / Short[_msgSender()][token].tokenPrice;
+        }
         return (Short[_msgSender()][token].bnb*zt/1 ether,mySells[_msgSender()].mnu);
     }
     function getMyPriceSell() view public returns(address[] memory add,uint[] memory,uint[] memory){
@@ -632,14 +659,14 @@ contract SellToken is Ownable {
     }
     function getShorts(address token) public view returns (uint,uint,uint,uint,uint) {
         if(mkt.balanceOf(token) <=0){
-         return (sum[token],settleAccounts[token],mkt.balanceOf(token),mkt.balanceOfLook(token),0); 
+         return (sum,settleAccounts,mkt.balanceOf(token),mkt.balanceOfLook(token),0); 
         }
         uint tos=getToken2Price(token,address(Short[_msgSender()][token].token),mkt.balanceOf(token));
-        return (sum[token],settleAccounts[token],mkt.balanceOf(token),mkt.balanceOfLook(token),tos); 
+        return (sum,settleAccounts,mkt.balanceOf(token),mkt.balanceOfLook(token),tos); 
     }
     function getShortsMoV(address token,address token1) public view returns (uint){
         if(mkt.balanceOf(token)==0) return 0;
-        uint isV=getToken2Price(token,token1,mkt.balanceOf(token))/20;
+        uint isV=getToken2Price(token,token1,mkt.balanceOf(token))/10;
         if(isV>Short[msg.sender][token].bnb){
             return isV-Short[msg.sender][token].bnb;
         }else{
